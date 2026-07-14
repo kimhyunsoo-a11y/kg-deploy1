@@ -5,7 +5,8 @@
       "name": "past-life-dev",
       "runtimeExecutable": "/Users/hyunsukim/.nvm/versions/node/v24.18.0/bin/npm",
       "runtimeArgs": ["--prefix", "/Users/hyunsukim/Documents/kg-deploy1", "run", "dev"],
-      "port": 3000
+      "port": 3000,
+      "autoPort": true
     }
   ]
 }
