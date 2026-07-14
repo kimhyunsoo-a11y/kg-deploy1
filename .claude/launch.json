@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "past-life-dev",
+      "runtimeExecutable": "/Users/hyunsukim/.nvm/versions/node/v24.18.0/bin/npm",
+      "runtimeArgs": ["--prefix", "/Users/hyunsukim/Documents/kg-deploy1", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

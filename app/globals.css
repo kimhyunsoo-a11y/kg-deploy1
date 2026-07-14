@@ -1,0 +1,214 @@
+:root {
+  --bg-0: #0b0a1f;
+  --bg-1: #1a1140;
+  --bg-2: #2a1a5e;
+  --accent: #c9a2ff;
+  --accent-strong: #a06bff;
+  --text: #f3efff;
+  --text-dim: #b9b2d8;
+  --card-border: rgba(201, 162, 255, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Pretendard", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  color: var(--text);
+  background: radial-gradient(
+      120% 120% at 50% 0%,
+      var(--bg-2) 0%,
+      var(--bg-1) 45%,
+      var(--bg-0) 100%
+    )
+    fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: hidden;
+}
+
+/* subtle starfield */
+.stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 75% 20%, #fff, transparent),
+    radial-gradient(1px 1px at 50% 65%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 85% 75%, #fff, transparent),
+    radial-gradient(1px 1px at 15% 80%, #fff, transparent),
+    radial-gradient(1px 1px at 35% 15%, #fff, transparent);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 560px;
+  background: rgba(20, 14, 48, 0.72);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 40px 32px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.eyebrow {
+  letter-spacing: 0.35em;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.title {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  background: linear-gradient(120deg, #fff 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.subtitle {
+  margin-top: 12px;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.form {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input {
+  width: 100%;
+  padding: 15px 18px;
+  font-size: 16px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input::placeholder {
+  color: rgba(185, 178, 216, 0.6);
+}
+
+.input:focus {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px rgba(160, 107, 255, 0.25);
+}
+
+.button {
+  width: 100%;
+  padding: 15px 18px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #14082e;
+  background: linear-gradient(120deg, var(--accent) 0%, var(--accent-strong) 100%);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.12s, box-shadow 0.12s;
+  box-shadow: 0 10px 30px rgba(160, 107, 255, 0.35);
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.error {
+  margin-top: 18px;
+  color: #ffb4c4;
+  font-size: 14px;
+  background: rgba(255, 90, 120, 0.12);
+  border: 1px solid rgba(255, 90, 120, 0.3);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.result {
+  margin-top: 26px;
+  text-align: left;
+  border-top: 1px solid var(--card-border);
+  padding-top: 24px;
+  animation: rise 0.4s ease both;
+}
+
+.resultTitle {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+
+.resultName {
+  color: var(--accent);
+}
+
+.resultParagraph {
+  color: var(--text);
+  font-size: 15.5px;
+  line-height: 1.85;
+  margin-bottom: 12px;
+  word-break: keep-all;
+}
+
+.disclaimer {
+  margin-top: 26px;
+  font-size: 12px;
+  color: var(--text-dim);
+  opacity: 0.8;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 32px 22px;
+  }
+  .title {
+    font-size: 28px;
+  }
+}
