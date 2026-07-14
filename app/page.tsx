@@ -2,10 +2,26 @@
 
 import { useState } from "react";
 
+type Record = {
+  occupation: string;
+  era: string;
+  causeOfDeath: string;
+  achievement: string;
+  memory: string;
+};
+
+const FIELDS: { key: keyof Record; label: string; icon: string }[] = [
+  { key: "occupation", label: "전생의 직업 또는 존재", icon: "🎭" },
+  { key: "era", label: "시대", icon: "🕰️" },
+  { key: "causeOfDeath", label: "사인 (죽은 이유)", icon: "⚰️" },
+  { key: "achievement", label: "전생의 업적", icon: "🏆" },
+  { key: "memory", label: "사람들은 나를 이렇게 기억합니다", icon: "🕊️" },
+];
+
 export default function Home() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [record, setRecord] = useState<Record | null>(null);
   const [resultName, setResultName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -16,7 +32,7 @@ export default function Home() {
 
     setLoading(true);
     setError(null);
-    setResult(null);
+    setRecord(null);
 
     try {
       const res = await fetch("/api/past-life", {
@@ -28,7 +44,7 @@ export default function Home() {
       if (!res.ok) {
         throw new Error(data?.error ?? "요청에 실패했습니다.");
       }
-      setResult(data.result as string);
+      setRecord(data.record as Record);
       setResultName(trimmed);
     } catch (err) {
       setError(
@@ -46,7 +62,7 @@ export default function Home() {
         <p className="eyebrow">✦ 전생 리딩 ✦</p>
         <h1 className="title">당신의 전생은?</h1>
         <p className="subtitle">
-          이름을 넣으면 AI가 그 사람의 전생을 이야기로 들려드립니다.
+          이름을 넣으면 AI가 그 사람의 전생을 기록으로 들려드립니다.
         </p>
 
         <form className="form" onSubmit={handleSubmit}>
@@ -71,16 +87,22 @@ export default function Home() {
 
         {error && <p className="error">⚠ {error}</p>}
 
-        {result && (
+        {record && (
           <article className="result">
             <h2 className="resultTitle">
-              <span className="resultName">{resultName}</span> 님의 전생
+              <span className="resultName">{resultName}</span> 님의 전생 기록
             </h2>
-            {result.split(/\n{2,}/).map((para, i) => (
-              <p key={i} className="resultParagraph">
-                {para.trim()}
-              </p>
-            ))}
+            <dl className="record">
+              {FIELDS.map(({ key, label, icon }) => (
+                <div key={key} className="recordRow">
+                  <dt className="recordLabel">
+                    <span className="recordIcon">{icon}</span>
+                    {label}
+                  </dt>
+                  <dd className="recordValue">{record[key]}</dd>
+                </div>
+              ))}
+            </dl>
           </article>
         )}
 

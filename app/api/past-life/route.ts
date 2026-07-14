@@ -1,31 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import pastLives from "@/app/data/pastLives.json";
 
 // OpenAI 호출은 Node 런타임에서 실행 (Edge 아님)
 export const runtime = "nodejs";
 // Vercel serverless 함수 최대 실행 시간(초)
 export const maxDuration = 30;
 
-const SYSTEM_PROMPT = `당신은 신비로운 전생(前生) 이야기꾼입니다. 사용자가 입력한 이름을 가진 사람의 '전생'을 창의적이고 흥미롭게 상상해서 들려줍니다.
+type PastLife = {
+  id: number;
+  occupation: string;
+  era: string;
+  causeOfDeath: string;
+  achievement: string;
+  memory: string;
+};
+
+// 탑재된 150건 데이터셋
+const DATA = pastLives as PastLife[];
+
+// 이름 → 안정적인 인덱스. 같은 이름은 항상 같은 전생이 나온다 (FNV-1a 해시).
+function pickIndex(name: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < name.length; i++) {
+    h ^= name.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h) % DATA.length;
+}
+
+function toRecord(base: PastLife) {
+  return {
+    occupation: base.occupation,
+    era: base.era,
+    causeOfDeath: base.causeOfDeath,
+    achievement: base.achievement,
+    memory: base.memory,
+  };
+}
+
+const SYSTEM_PROMPT = `당신은 신비로운 전생(前生) 이야기꾼입니다. 입력으로 사용자의 '이름'과, 그 사람에게 배정된 전생의 기본 설정(base)이 JSON으로 주어집니다.
+
+당신의 일: base의 정체성(직업/존재, 시대)은 그대로 유지하면서, 그 이름을 가진 사람에게 어울리도록 각 항목을 생생하고 개성 있게 다시 써서 JSON으로 돌려줍니다.
 
 규칙:
-- 이 결과는 오직 재미와 엔터테인먼트를 위한 것입니다. 실제 사실이나 운세, 예언이 아닙니다.
-- 따뜻하고 신비로운 말투로, 한국어로 작성합니다.
-- 다음 요소를 하나의 자연스러운 이야기로 녹여냅니다: 전생의 시대와 장소, 그 사람의 신분이나 직업, 성격, 인상적인 사건 하나, 그리고 그 전생이 지금의 삶에 남긴 흔적.
-- 전체 분량은 한국어 350~550자 내외, 3~4개 문단으로 작성하고 문단 사이는 빈 줄로 구분합니다.
-- 부정적이거나 불쾌한 내용, 특정 실존 인물에 대한 단정은 피하고, 긍정적이고 낭만적인 톤을 유지합니다.
-- 이름의 뜻이나 어감에서 영감을 얻어도 좋습니다.
-- 머리말/맺음말 없이 이야기 본문만 출력합니다.`;
+- 오직 재미와 엔터테인먼트를 위한 창작입니다. 실제 사실·운세·예언이 아닙니다.
+- 한국어로, 따뜻하고 신비로운 말투로 작성합니다.
+- occupation(직업/존재)과 era(시대)는 base의 핵심 설정을 벗어나지 마세요. 시대는 반드시 기원전 약 150만 년 ~ 1980년 사이여야 합니다. 표현만 다듬는 정도는 괜찮습니다.
+- causeOfDeath(사인), achievement(업적), memory(사람들의 기억)는 base를 바탕으로 이름의 어감·뜻에서 영감을 얻어 개성 있게 확장하세요.
+- 각 항목은 1~2문장, 너무 길지 않게.
+- 부정적·불쾌한 표현이나 특정 실존 인물 단정은 피하고 낭만적인 톤을 유지합니다.
+- 반드시 아래 키를 가진 JSON 객체 하나만 출력합니다. 다른 텍스트 금지:
+  {"occupation": string, "era": string, "causeOfDeath": string, "achievement": string, "memory": string}`;
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey || apiKey.startsWith("sk-여기")) {
-    return NextResponse.json(
-      { error: "서버에 OPENAI_API_KEY가 설정되어 있지 않습니다." },
-      { status: 500 },
-    );
-  }
-
   let name = "";
   try {
     const body = await req.json();
@@ -44,32 +72,59 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const openai = new OpenAI({ apiKey });
-  const model = process.env.OPENAI_MODEL ?? "gpt-5.5";
+  // 1) 이름으로 탑재된 데이터셋에서 전생 하나를 고른다 (항상 동일)
+  const base = DATA[pickIndex(name)];
 
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  // 2) OpenAI 키가 없으면 → 데이터셋 원본을 그대로 반환 (앱은 항상 동작)
+  if (!apiKey || apiKey.startsWith("sk-여기")) {
+    return NextResponse.json({ name, source: "dataset", record: toRecord(base) });
+  }
+
+  // 3) OpenAI로 이름에 맞춰 개성 있게 다시 쓴다
   try {
+    const openai = new OpenAI({ apiKey });
+    const model = process.env.OPENAI_MODEL ?? "gpt-5.5";
+
     const completion = await openai.chat.completions.create({
       model,
+      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `이 사람의 전생을 이야기해 주세요: "${name}"` },
+        {
+          role: "user",
+          content: JSON.stringify({
+            name,
+            base: {
+              occupation: base.occupation,
+              era: base.era,
+              causeOfDeath: base.causeOfDeath,
+              achievement: base.achievement,
+              memory: base.memory,
+            },
+          }),
+        },
       ],
     });
 
-    const text = completion.choices[0]?.message?.content?.trim() ?? "";
-    if (!text) {
-      return NextResponse.json(
-        { error: "결과를 생성하지 못했습니다. 다시 시도해 주세요." },
-        { status: 502 },
-      );
-    }
+    const raw = completion.choices[0]?.message?.content ?? "";
+    const parsed = JSON.parse(raw) as Partial<PastLife>;
 
-    return NextResponse.json({ name, result: text });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "알 수 없는 오류";
-    return NextResponse.json(
-      { error: `AI 호출에 실패했습니다: ${message}` },
-      { status: 502 },
-    );
+    const pick = (v: unknown, fallback: string) =>
+      typeof v === "string" && v.trim() ? v.trim() : fallback;
+
+    const record = {
+      occupation: pick(parsed.occupation, base.occupation),
+      era: pick(parsed.era, base.era),
+      causeOfDeath: pick(parsed.causeOfDeath, base.causeOfDeath),
+      achievement: pick(parsed.achievement, base.achievement),
+      memory: pick(parsed.memory, base.memory),
+    };
+
+    return NextResponse.json({ name, source: "ai", record });
+  } catch {
+    // 4) AI 호출/파싱 실패 시에도 데이터셋 원본으로 응답 (서비스 중단 없음)
+    return NextResponse.json({ name, source: "dataset", record: toRecord(base) });
   }
 }
